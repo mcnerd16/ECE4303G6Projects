@@ -57,18 +57,60 @@ print("Connecting....")
 try:
     shell = spur.SshShell(hostname=hostCmd, port=portCmd, username=userCmd, password=passCmd, missing_host_key=spur.ssh.MissingHostKey.accept)
     result = shell.run(["echo", "hello"])
-    cmdInput = input("Welcome to " + hostCmd + ":\n>>")
+    user = shell.run(["sh","-c","whoami"], allow_error=True).output.decode("utf-8").split("\n")[0]
+    hostn = shell.run(["sh","-c","hostname"], allow_error=True).output.decode("utf-8").split("\n")[0]
+    baseDir = shell.run(["sh","-c","pwd"], allow_error=True).output.decode("utf-8").split("\n")[0]
+    cmdInput = input("Welcome to " + hostCmd + ":\n" + user + "@" + hostn + " ~>>")
+    workDir = baseDir
+    prevDir = workDir
     while (cmdInput != "exit"):
-        result = shell.run(["sh", "-c",cmdInput], allow_error=True)
-        if result.return_code <= 4:
-            if result != 0:
-                print(result.output.decode("utf-8"))
-            if result.return_code != 0:
-                result = shell.run(["sh", "-x",cmdInput], allow_error=True)
-                print(result.to_error())
+        if (cmdInput.startswith("cd ")):
+            try:
+                if (cmdInput.split()[1] == "~"):
+                    result = shell.run(["echo", "hello"], cwd=baseDir)
+                    prevDir = workDir
+                    workDir = baseDir
+                elif cmdInput.split()[1] == "-":
+                    result = shell.run(["echo", "hello"], cwd=prevDir)
+                    tempDir = prevDir
+                    prevDir = workDir
+                    workDir = tempDir
+                elif cmdInput.split()[1].startswith(".."):
+                    while cmdInput.split()[1].find("..") > -1:
+                        if len(workDir.split("/")) == len(baseDir.split("/")):
+                            result = shell.run(["echo", "hello"], cwd=baseDir)
+                            prevDir = workDir
+                            workDir = baseDir
+                            break
+                        elif cmdInput.split()[1][2] == "/":
+                            result = shell.run(["echo", "hello"], cwd=workDir.rsplit("/",1)[0])
+                            prevDir = workDir
+                            workDir = workDir.rsplit("/",1)[0]
+                            if cmdInput.split()[1].lstrip('../') == "":
+                                break
+                            cmdInput = cmdInput.split()[0] + " " + cmdInput.split()[1].lstrip('../')
+                            
+                    else:
+                        result = shell.run(["echo", "hello"], cwd=workDir + "/" +cmdInput.split()[1])
+                        prevDir = workDir
+                        workDir = workDir + "/"  + cmdInput.split()[1]
+                else:
+                    result = shell.run(["echo", "hello"], cwd=workDir + "/" +cmdInput.split()[1])
+                    prevDir = workDir
+                    workDir = workDir + "/"  + cmdInput.split()[1]
+            except:
+                print("Not a directory")
         else:
-            print(result.to_error())
-        cmdInput = input(">>")
+            result = shell.run(["sh", "-c",cmdInput], allow_error=True, cwd=workDir)
+            if result.return_code <= 4:
+                if result != 0:
+                    print(result.output.decode("utf-8"))
+                if result.return_code != 0:
+                    result = shell.run(["sh", "-x",cmdInput], allow_error=True)
+                    print(result.to_error())
+            else:
+                print(result.to_error())
+        cmdInput = input(user + "@" + hostn + " ~" + workDir.partition(baseDir)[2] + ">>")
 except Exception as inst:
     print("Connection Failed.")
     print(inst)
