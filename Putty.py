@@ -101,10 +101,16 @@ try:
             except:
                 print("Not a directory")
         else:
-            result = shell.run(["sh", "-c",cmdInput], allow_error=True, cwd=workDir)
+            result = shell.spawn(["sh", "-c",cmdInput], allow_error=True, cwd=workDir, stdout=sys.stdout.buffer)
+            while result.is_running():
+                line = result._stdout.readline()
+                if line and line != '':
+                    print(line)
+            result = result.wait_for_result()
             if result.return_code <= 4:
                 if result != 0:
-                    print(result.output.decode("utf-8"))
+                    #print(result.output.decode("utf-8"))
+                    result = result
                 if result.return_code != 0:
                     result = shell.run(["sh", "-x",cmdInput], allow_error=True)
                     print(result.to_error())
