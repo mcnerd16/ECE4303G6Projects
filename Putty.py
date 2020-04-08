@@ -14,18 +14,21 @@ screen."""
     def __call__(self): return self.impl()
 class _GetchUnix:
     def __init__(self):
-        import tty, sys
+        import tty, sys, termios, getch
 
     def __call__(self):
-        import sys, tty, termios
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
+        import sys, tty, termios, getch
+#        fd = sys.stdin.fileno()
+#        old_settings = termios.tcgetattr(fd)
+#        try:
+#            tty.setraw(sys.stdin.fileno())
+#            ch = sys.stdin.read(1)
+#        finally:
+#            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+#        return ch
+#        return getch.getch()
+        import readchar
+        return readchar.readchar()
 class _GetchWindows:
     def __init__(self):
         import msvcrt
@@ -42,7 +45,7 @@ print("Enter Password:")
 done = False
 passCmd = ""
 while done == False:
-    ch = getch.__call__()
+    ch = bytes(getch.__call__(),'utf-8')
     if ch.decode("utf-8") == '\r':
         done = True
     elif ch.decode("utf-8") == '\x08':
@@ -118,4 +121,4 @@ except Exception as inst:
     print("Connection Failed.")
     print(inst)
 finally:
-    ssh_client.close()
+    shell.close()
