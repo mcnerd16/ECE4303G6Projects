@@ -1,5 +1,4 @@
 import paramiko,spur, sys, io
-import msvcrt
 import spur.ssh
 from contextlib import redirect_stdout
 
@@ -36,8 +35,6 @@ class _GetchWindows:
         return msvcrt.getch()
 getch = _Getch()
 
-ssh_client=paramiko.SSHClient()
-ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 hostCmd = input("Enter Hostname:")
 portCmd = input("Enter Port Number:")
 userCmd = input("Enter Username:")
