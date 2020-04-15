@@ -1,4 +1,4 @@
-import paramiko,spur, sys, io
+import paramiko,spur, sys, io, signal
 import spur.ssh
 from contextlib import redirect_stdout
 
@@ -45,7 +45,11 @@ print("Enter Password:")
 done = False
 passCmd = ""
 while done == False:
-    ch = bytes(getch.__call__(),'utf-8')
+    ch = getch.__call__()
+    try:
+        ch = bytes(ch,'utf-8')
+    except:
+        ch = ch
     if ch.decode("utf-8") == '\r':
         done = True
     elif ch.decode("utf-8") == '\x08':
@@ -101,11 +105,14 @@ try:
             except:
                 print("Not a directory")
         else:
-            result = shell.spawn(["sh", "-c",cmdInput], allow_error=True, cwd=workDir, stdout=sys.stdout.buffer)
-            while result.is_running():
-                line = result._stdout.readline()
-                if line and line != '':
-                    print(line)
+            result = shell.spawn(["sh", "-c",cmdInput], allow_error=True, cwd=workDir, stdout=sys.stdout.buffer, store_pid=True)
+            try:
+                while result.is_running():
+                    line = result._stdout.readline()
+                    if line and line != '':
+                        print(line)
+            except:
+                result._shell.run(["kill", "-{0}".format(signal.SIGINT), str(result.pid)])
             result = result.wait_for_result()
             if result.return_code <= 4:
                 if result != 0:
