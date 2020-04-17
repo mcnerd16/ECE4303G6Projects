@@ -110,7 +110,10 @@ try:
                 while result.is_running():
                     line = result._stdout.readline()
                     if line and line != '':
-                        print(line)
+                        if type(line) == bytes:
+                            print(line.decode().split('\n')[0])
+                        else:
+                            print(line.split('b')[0] + line.split('b')[1].decode().split('\n')[0])
             except:
                 result._shell.run(["kill", "-{0}".format(signal.SIGINT), str(result.pid)])
             result = result.wait_for_result()
